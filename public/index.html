@@ -18,7 +18,7 @@
         }
         #container {
             width: 100%;
-            max-width: 600px;
+            max-width: 680px;
             background-color: #ffffff;
             padding: 20px;
             border-radius: 10px;
@@ -147,7 +147,7 @@
                 allExams.forEach(exam => {
                     const listItem = document.createElement('li');
                     const tarihSaat = getExamDateAndTime(exam);
-                    listItem.textContent = `${exam['Ders Adı']} - ${tarihSaat}`;
+                    listItem.textContent = `${exam['Ders Adı']} - ${tarihSaat} - Derslik: ${exam['Derslik']}`;
                     scheduleList.appendChild(listItem);
                 });
                 document.getElementById('exam-schedule').style.display = 'block';
