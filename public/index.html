@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sınav Programı Sorgulama</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            position: relative;
+        }
+        #container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+        #exam-schedule {
+            margin-top: 20px;
+            display: none;
+        }
+        #course-codes {
+            margin-bottom: 20px;
+        }
+        .course-code-input {
+            margin: 5px 0;
+            padding: 10px;
+            width: calc(100% - 22px);
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #00796b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #004d40;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background: #f9f9f9;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #00796b;
+        }
+        #query-count {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #ffffff;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="query-count">Yapılan Sorgu Sayısı: <span id="count">0</span></div>
+    <div id="container">
+        <h2>Sınav Programı Sorgulama</h2>
+        <div id="course-codes">
+            <label for="course-code-1">Ders Kodu 1: </label>
+            <input type="text" id="course-code-1" class="course-code-input"><br>
+            <label for="course-code-2">Ders Kodu 2: </label>
+            <input type="text" id="course-code-2" class="course-code-input"><br>
+            <label for="course-code-3">Ders Kodu 3: </label>
+            <input type="text" id="course-code-3" class="course-code-input"><br>
+            <label for="course-code-4">Ders Kodu 4: </label>
+            <input type="text" id="course-code-4" class="course-code-input"><br>
+            <label for="course-code-5">Ders Kodu 5: </label>
+            <input type="text" id="course-code-5" class="course-code-input"><br>
+            <label for="course-code-6">Ders Kodu 6: </label>
+            <input type="text" id="course-code-6" class="course-code-input"><br>
+            <label for="course-code-7">Ders Kodu 7: </label>
+            <input type="text" id="course-code-7" class="course-code-input"><br>
+            <label for="course-code-8">Ders Kodu 8: </label>
+            <input type="text" id="course-code-8" class="course-code-input"><br>
+            <label for="course-code-9">Ders Kodu 9: </label>
+            <input type="text" id="course-code-9" class="course-code-input"><br>
+            <label for="course-code-10">Ders Kodu 10: </label>
+            <input type="text" id="course-code-10" class="course-code-input"><br>
+        </div>
+        <button onclick="getExamSchedule()">Sorgula</button>
+
+        <div id="exam-schedule">
+            <h3>Sınav Programı</h3>
+            <ul id="schedule-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        let examData;
+
+        // JSON dosyasını yükle
+        fetch('exam_schedule.json')
+            .then(response => response.json())
+            .then(data => {
+                examData = data;
+            })
+            .catch(error => console.error('JSON yüklenemedi:', error));
+
+        function getExamSchedule() {
+            const scheduleList = document.getElementById('schedule-list');
+            scheduleList.innerHTML = '';
+
+            let allExams = [];
+
+            for (let i = 1; i <= 10; i++) {
+                const courseCode = document.getElementById(`course-code-${i}`).value.trim();
+                if (courseCode) {
+                    const filteredExams = examData.filter(exam => exam['Ders Kodu'] === courseCode);
+                    allExams = allExams.concat(filteredExams);
+                }
+            }
+
+            if (allExams.length > 0) {
+                allExams.sort((a, b) => {
+                    const dateA = getExamDate(a);
+                    const dateB = getExamDate(b);
+                    if (dateA.getTime() !== dateB.getTime()) {
+                        return dateA - dateB;
+                    }
+                    return getExamTime(a) - getExamTime(b);
+                });
+
+                allExams.forEach(exam => {
+                    const listItem = document.createElement('li');
+                    const tarihSaat = getExamDateAndTime(exam);
+                    listItem.textContent = `${exam['Ders Adı']} - ${tarihSaat}`;
+                    scheduleList.appendChild(listItem);
+                });
+                document.getElementById('exam-schedule').style.display = 'block';
+            } else {
+                alert('Girilen ders kodları ile ilgili sınav bulunamadı.');
+            }
+
+            // Veritabanına sorgu kaydet ve sorgu sayısını güncelle
+            updateQueryCount();
+        }
+
+        function getExamDateAndTime(exam) {
+            const days = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'];
+            for (let day of days) {
+                for (let key in exam) {
+                    if (key.startsWith(day) && exam[key] && key.includes('(')) {
+                        return `Tarih: ${key.match(/\((.*?)\)/)[1]} - Saat: ${exam[key]}`;
+                    }
+                }
+            }
+            return 'Tarih: Belirtilmemiş - Saat: Belirtilmemiş';
+        }
+
+        function getExamDate(exam) {
+            const days = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'];
+            for (let day of days) {
+                for (let key in exam) {
+                    if (key.startsWith(day) && exam[key] && key.includes('(')) {
+                        const [dayPart, monthPart, yearPart] = key.match(/\((.*?)\)/)[1].split('.');
+                        return new Date(`${yearPart}-${monthPart}-${dayPart}`);
+                    }
+                }
+            }
+            return new Date(0); // Geçersiz tarih
+        }
+
+        function getExamTime(exam) {
+            const days = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'];
+            for (let day of days) {
+                for (let key in exam) {
+                    if (key.startsWith(day) && exam[key] && key.includes('(')) {
+                        const timeString = exam[key].split('-')[0];
+                        const [hours, minutes] = timeString.split('.');
+                        return parseInt(hours) * 60 + parseInt(minutes);
+                    }
+                }
+            }
+            return 0; // Geçersiz saat
+        }
+
+        function updateQueryCount() {
+        fetch('/update-query-count')
+            .then(response => {
+                console.log("ok");
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('count').textContent = data.queryCount;
+            })
+            .catch(error => console.error('Sorgu sayısı güncellenemedi:', error));
+        }
+
+    </script>
+</body>
+</html>
